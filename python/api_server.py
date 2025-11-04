@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-API Server for Network Monitoring System
+API Server for Network Intrusion Detection System (NIDS)
 Provides REST API endpoints for the web interface
 """
 
@@ -19,6 +19,8 @@ else:
     
 from packet_analyzer import PacketAnalyzer
 from ml_detector import MLThreatDetector
+from network_flow_analyzer import NetworkFlowAnalyzer
+from network_topology_mapper import NetworkTopologyMapper
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for web interface
@@ -27,6 +29,8 @@ CORS(app)  # Enable CORS for web interface
 network_monitor = NetworkMonitor()
 packet_analyzer = PacketAnalyzer()
 ml_detector = MLThreatDetector()
+network_flow_analyzer = NetworkFlowAnalyzer()
+network_topology_mapper = NetworkTopologyMapper()
 
 # Global state
 monitoring_active = False
@@ -39,7 +43,7 @@ system_stats = {
 }
 
 def background_analysis():
-    """Background thread for continuous packet analysis"""
+    """Background thread for continuous network packet analysis"""
     global latest_packets, latest_threats, system_stats
     
     start_time = time.time()
@@ -47,21 +51,33 @@ def background_analysis():
     while True:
         try:
             if monitoring_active:
-                # Get recent packets
+                # Get recent network packets
                 packets = network_monitor.get_recent_packets(100)
                 latest_packets = packets
                 
                 if packets:
-                    # Analyze packets
+                    # Analyze network packets
                     flow_features = packet_analyzer.extract_flow_features(packets)
                     
-                    # Generate threat intelligence
+                    # Network flow analysis
+                    network_flows = network_flow_analyzer.analyze_network_flows(packets)
+                    
+                    # Network topology discovery
+                    topology = network_topology_mapper.discover_network_topology(packets)
+                    
+                    # Generate network threat intelligence
                     threats = packet_analyzer.generate_threat_intelligence(packets)
                     
-                    # ML-based threat detection (if models are trained)
+                    # Network ML-based threat detection
                     if ml_detector.is_trained and flow_features:
                         ml_threats = ml_detector.predict_threats(flow_features)
                         threats.extend(ml_threats)
+                    
+                    # Network flow-based threats
+                    if network_flows:
+                        network_intelligence = network_flow_analyzer.generate_network_intelligence(network_flows)
+                        threats.extend(network_intelligence.get('lateral_movement', []))
+                        threats.extend(network_intelligence.get('data_exfiltration', []))
                     
                     latest_threats = threats
                     
@@ -83,7 +99,7 @@ analysis_thread.start()
 
 @app.route('/api/status', methods=['GET'])
 def get_status():
-    """Get system status"""
+    """Get NIDS system status"""
     return jsonify({
         'monitoring_active': monitoring_active,
         'ml_models_trained': ml_detector.is_trained,
@@ -93,7 +109,7 @@ def get_status():
 
 @app.route('/api/monitoring/start', methods=['POST'])
 def start_monitoring():
-    """Start network monitoring"""
+    """Start network intrusion detection monitoring"""
     global monitoring_active
     
     try:
@@ -108,7 +124,7 @@ def start_monitoring():
 
 @app.route('/api/monitoring/stop', methods=['POST'])
 def stop_monitoring():
-    """Stop network monitoring"""
+    """Stop network intrusion detection monitoring"""
     global monitoring_active
     
     try:
@@ -120,7 +136,7 @@ def stop_monitoring():
 
 @app.route('/api/packets', methods=['GET'])
 def get_packets():
-    """Get recent network packets"""
+    """Get recent network packets for NIDS analysis"""
     count = request.args.get('count', 50, type=int)
     return jsonify({
         'packets': latest_packets[-count:],
@@ -130,7 +146,7 @@ def get_packets():
 
 @app.route('/api/threats', methods=['GET'])
 def get_threats():
-    """Get detected threats"""
+    """Get detected network threats"""
     return jsonify({
         'threats': latest_threats,
         'total_count': len(latest_threats),
@@ -139,7 +155,7 @@ def get_threats():
 
 @app.route('/api/statistics', methods=['GET'])
 def get_statistics():
-    """Get traffic statistics"""
+    """Get network traffic statistics"""
     traffic_stats = network_monitor.get_traffic_stats()
     
     return jsonify({
@@ -150,15 +166,54 @@ def get_statistics():
 
 @app.route('/api/analysis/flows', methods=['GET'])
 def get_flow_analysis():
-    """Get flow-based analysis"""
+    """Get network flow-based analysis"""
     if not latest_packets:
         return jsonify({'flows': [], 'message': 'No packets available'})
     
     try:
+        # Get both traditional and network flow features
         flow_features = packet_analyzer.extract_flow_features(latest_packets)
+        network_flows = network_flow_analyzer.analyze_network_flows(latest_packets)
+        
         return jsonify({
             'flows': flow_features,
+            'network_flows': network_flows,
             'total_count': len(flow_features),
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/network/topology', methods=['GET'])
+def get_network_topology():
+    """Get network topology information"""
+    if not latest_packets:
+        return jsonify({'topology': {}, 'message': 'No network data available'})
+    
+    try:
+        topology = network_topology_mapper.discover_network_topology(latest_packets)
+        changes = network_topology_mapper.detect_topology_changes()
+        
+        return jsonify({
+            'topology': topology,
+            'changes': changes,
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/network/intelligence', methods=['GET'])
+def get_network_intelligence():
+    """Get comprehensive network threat intelligence"""
+    if not latest_packets:
+        return jsonify({'intelligence': {}, 'message': 'No network data available'})
+    
+    try:
+        network_flows = network_flow_analyzer.analyze_network_flows(latest_packets)
+        intelligence = network_flow_analyzer.generate_network_intelligence(network_flows)
+        
+        return jsonify({
+            'intelligence': intelligence,
             'timestamp': datetime.now().isoformat()
         })
     except Exception as e:
@@ -166,7 +221,7 @@ def get_flow_analysis():
 
 @app.route('/api/ml/train', methods=['POST'])
 def train_ml_models():
-    """Train ML models"""
+    """Train network ML models"""
     try:
         # Train with synthetic data or provided data
         training_data = request.get_json() if request.is_json else None
@@ -187,7 +242,7 @@ def train_ml_models():
 
 @app.route('/api/ml/predict', methods=['POST'])
 def predict_threats():
-    """Predict threats using ML models"""
+    """Predict network threats using ML models"""
     if not ml_detector.is_trained:
         return jsonify({'error': 'Models not trained'}), 400
     
@@ -210,12 +265,12 @@ def predict_threats():
 
 @app.route('/api/ml/models', methods=['GET'])
 def get_model_info():
-    """Get ML model information"""
+    """Get network ML model information"""
     return jsonify(ml_detector.get_model_info())
 
 @app.route('/api/export/packets', methods=['GET'])
 def export_packets():
-    """Export packets to file"""
+    """Export network packets to file"""
     try:
         filename = network_monitor.export_packets_json()
         if filename:
@@ -231,7 +286,7 @@ def export_packets():
 
 @app.route('/api/export/analysis', methods=['GET'])
 def export_analysis():
-    """Export analysis report"""
+    """Export network analysis report"""
     try:
         filename = packet_analyzer.export_analysis_report(latest_packets)
         if filename:
@@ -247,7 +302,7 @@ def export_analysis():
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    """Health check endpoint"""
+    """NIDS health check endpoint"""
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
@@ -255,24 +310,26 @@ def health_check():
     })
 
 if __name__ == '__main__':
-    print("Starting Network Monitoring API Server...")
-    print("Initializing pre-trained ML models...")
+    print("Starting Network Intrusion Detection System (NIDS) API Server...")
+    print("Initializing pre-trained network ML models...")
     
     # Models are automatically initialized in constructor
     if ml_detector.is_trained:
-        print("✓ ML models ready for real-time threat detection")
+        print("✓ Network ML models ready for real-time threat detection")
     else:
-        print("⚠ Warning: ML models not properly initialized")
+        print("⚠ Warning: Network ML models not properly initialized")
     
-    print("API Server ready!")
+    print("NIDS API Server ready!")
     print("Endpoints available:")
-    print("  GET  /api/status - System status")
-    print("  POST /api/monitoring/start - Start monitoring")
-    print("  POST /api/monitoring/stop - Stop monitoring")
-    print("  GET  /api/packets - Get recent packets")
-    print("  GET  /api/threats - Get detected threats")
-    print("  GET  /api/statistics - Get traffic statistics")
-    print("  POST /api/ml/predict - Predict threats")
-    print("  GET  /api/ml/models - Get model info")
+    print("  GET  /api/status - NIDS system status")
+    print("  POST /api/monitoring/start - Start network monitoring")
+    print("  POST /api/monitoring/stop - Stop network monitoring")
+    print("  GET  /api/packets - Get recent network packets")
+    print("  GET  /api/threats - Get detected network threats")
+    print("  GET  /api/statistics - Get network traffic statistics")
+    print("  GET  /api/network/topology - Get network topology")
+    print("  GET  /api/network/intelligence - Get network threat intelligence")
+    print("  POST /api/ml/predict - Predict network threats")
+    print("  GET  /api/ml/models - Get network ML model info")
     
     app.run(host='0.0.0.0', port=5000, debug=True)
