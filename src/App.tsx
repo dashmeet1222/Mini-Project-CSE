@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import useRealTimeData from './hooks/useRealTimeData';
-import Dashboard from './components/Dashboard';
+import NetworkDashboard from './components/NetworkDashboard';
 import NetworkTraffic from './components/NetworkTraffic';
 import PacketCapture from './components/PacketCapture';
 import FeatureExtraction from './components/FeatureExtraction';
@@ -8,16 +8,16 @@ import MLTraining from './components/MLTraining';
 import InferenceEngine from './components/InferenceEngine';
 import AlertingSystem from './components/AlertingSystem';
 import ResponseSystem from './components/ResponseSystem';
-import { Shield, Activity, Brain, Bell, Zap, Database, Settings } from 'lucide-react';
+import { Shield, Activity, Bell, Zap, Database, Settings, Network } from 'lucide-react';
 
 const navigationItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: Activity },
+  { id: 'dashboard', label: 'Network Dashboard', icon: Network },
   { id: 'network', label: 'Network Traffic', icon: Activity },
   { id: 'capture', label: 'Packet Capture', icon: Database },
-  { id: 'features', label: 'Feature Extraction', icon: Settings },
-  { id: 'inference', label: 'Inference Engine', icon: Zap },
-  { id: 'alerts', label: 'Alerts', icon: Bell },
-  { id: 'response', label: 'Response', icon: Shield },
+  { id: 'features', label: 'Network Analysis', icon: Settings },
+  { id: 'inference', label: 'Network ML Engine', icon: Zap },
+  { id: 'alerts', label: 'Network Alerts', icon: Bell },
+  { id: 'response', label: 'Network Response', icon: Shield },
 ];
 
 function App() {
@@ -64,7 +64,7 @@ function App() {
   const renderActiveSection = () => {
     switch (activeSection) {
       case 'dashboard':
-        return <Dashboard systemStatus={convertedSystemStatus} threats={threats} alerts={alerts} />;
+        return <NetworkDashboard systemStatus={convertedSystemStatus} threats={threats} alerts={alerts} />;
       case 'network':
         return <NetworkTraffic packets={packets} />;
       case 'capture':
@@ -89,14 +89,14 @@ function App() {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Shield className="h-8 w-8 text-emerald-400" />
-            <h1 className="text-xl font-bold text-white">SecureNet IDS</h1>
+            <h1 className="text-xl font-bold text-white">SecureNet NIDS</h1>
             <span className="text-sm text-slate-400">v2.1.0</span>
           </div>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <div className={`h-2 w-2 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`}></div>
               <span className="text-sm text-slate-300">
-                {isConnected ? 'System Active' : 'Disconnected'}
+                {isConnected ? 'NIDS Active' : 'Disconnected'}
               </span>
             </div>
             {error && (
